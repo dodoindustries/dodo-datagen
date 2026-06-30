@@ -1,0 +1,14 @@
+{
+  "locale": "en_US",
+  "fields": [
+    { "name": "event_id",   "type": "uuid", "unique": true },
+    { "name": "session",    "type": "pattern", "pattern": "sess_@@@@@@@@" },
+    { "name": "type",       "type": "enum", "values": ["page_view", "click", "signup", "purchase", "logout"], "weights": [0.5, 0.25, 0.1, 0.1, 0.05] },
+    { "name": "user",       "type": "full_name" },
+    { "name": "actor",      "type": "template", "template": "{user} ({type})" },
+    { "name": "ip",         "type": "ipv4" },
+    { "name": "lat",        "type": "latitude" },
+    { "name": "lng",        "type": "longitude" },
+    { "name": "ts",         "type": "datetime", "start": "2024-01-01", "end": "2024-12-31" }
+  ]
+}

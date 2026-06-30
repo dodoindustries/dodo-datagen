@@ -1,0 +1,29 @@
+# Build directories
+/build/
+/out/
+/cmake-build-*/
+_deps/
+
+# CMake artifacts
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+CTestTestfile.cmake
+*.cmake.stamp
+
+# Compiled output
+*.o
+*.obj
+*.a
+*.lib
+*.exe
+*.pdb
+dodo-datagen
+dodo_tests
+
+# Editor / OS
+.vs/
+.vscode/
+.idea/
+.DS_Store
+*.swp

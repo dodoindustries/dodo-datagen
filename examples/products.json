@@ -1,0 +1,17 @@
+{
+  "locale": "en_US",
+  "fields": [
+    { "name": "sku",         "type": "pattern", "pattern": "@@@-####", "unique": true },
+    { "name": "name",        "type": "words", "n": 3 },
+    { "name": "slug",        "type": "slug", "n": 3 },
+    { "name": "url",         "type": "url" },
+    { "name": "category",    "type": "enum", "values": ["electronics", "home", "toys", "grocery", "apparel"] },
+    { "name": "color",       "type": "hex_color" },
+    { "name": "price",       "type": "price", "min": 0.99, "max": 999.99 },
+    { "name": "in_stock",    "type": "bool", "p": 0.8 },
+    { "name": "quantity",    "type": "int", "min": 0, "max": 5000 },
+    { "name": "rating",      "type": "float", "min": 1.0, "max": 5.0, "decimals": 1 },
+    { "name": "description", "type": "sentence", "nullable": true },
+    { "name": "added_on",    "type": "date", "start": "2021-01-01", "end": "2024-12-31" }
+  ]
+}

@@ -1,0 +1,19 @@
+{
+  "locale": "es_ES",
+  "fields": [
+    { "name": "id",        "type": "sequence", "start": 1 },
+    { "name": "uuid",      "type": "uuid", "unique": true },
+    { "name": "name",      "type": "full_name" },
+    { "name": "email",     "type": "email", "from": "name", "domain": "example.com" },
+    { "name": "username",  "type": "username", "from": "name", "unique": true },
+    { "name": "company",   "type": "company" },
+    { "name": "job",       "type": "job_title" },
+    { "name": "age",       "type": "int", "min": 18, "max": 90 },
+    { "name": "city",      "type": "city" },
+    { "name": "country",   "type": "country" },
+    { "name": "status",    "type": "enum", "values": ["active", "trial", "churned"], "weights": [0.6, 0.1, 0.3] },
+    { "name": "signup_at", "type": "datetime", "start": "2020-01-01", "end": "2024-12-31" },
+    { "name": "is_admin",  "type": "bool", "p": 0.05 },
+    { "name": "notes",     "type": "sentence", "nullable": true, "null_rate": 0.4 }
+  ]
+}

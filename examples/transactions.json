@@ -1,0 +1,16 @@
+{
+  "locale": "en_US",
+  "fields": [
+    { "name": "txn_id",     "type": "uuid", "unique": true },
+    { "name": "user_id",    "type": "int", "min": 1, "max": 100000 },
+    { "name": "amount",     "type": "price", "min": 1.0, "max": 5000.0 },
+    { "name": "currency",   "type": "currency_code" },
+    { "name": "card",       "type": "credit_card" },
+    { "name": "method",     "type": "enum", "values": ["card", "transfer", "wallet", "cash"] },
+    { "name": "status",     "type": "enum", "values": ["pending", "settled", "refunded", "failed"], "weights": [0.1, 0.7, 0.1, 0.1] },
+    { "name": "reference",  "type": "pattern", "pattern": "TXN-########" },
+    { "name": "client_ip",  "type": "ipv4" },
+    { "name": "created_at", "type": "datetime", "start": "2023-01-01", "end": "2024-12-31" },
+    { "name": "note",       "type": "words", "n": 4, "nullable": true, "null_rate": 0.7 }
+  ]
+}
