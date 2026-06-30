@@ -1,0 +1,82 @@
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write      # create the release and upload assets
+  id-token: write      # Sigstore keyless signing (OIDC)
+  attestations: write  # store the build provenance attestation
+
+jobs:
+  build:
+    name: build (${{ matrix.asset }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            asset: dodo-datagen-linux-x86_64
+          - os: macos-latest
+            asset: dodo-datagen-macos-arm64
+          - os: windows-latest
+            asset: dodo-datagen-windows-x86_64.exe
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DDODO_BUILD_TESTS=OFF
+
+      - name: Build
+        run: cmake --build build --config Release
+
+      - name: Stage binary (Unix)
+        if: runner.os != 'Windows'
+        run: |
+          mkdir -p dist
+          cp build/dodo-datagen "dist/${{ matrix.asset }}"
+          strip "dist/${{ matrix.asset }}" || true
+
+      - name: Stage binary (Windows)
+        if: runner.os == 'Windows'
+        shell: bash
+        run: |
+          mkdir -p dist
+          cp build/Release/dodo-datagen.exe "dist/${{ matrix.asset }}"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.asset }}
+          path: dist/${{ matrix.asset }}
+          if-no-files-found: error
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: staging
+
+      - name: Collect binaries and checksums
+        run: |
+          mkdir -p dist
+          find staging -type f -exec cp {} dist/ \;
+          cd dist
+          sha256sum dodo-datagen-* > SHA256SUMS
+          cat SHA256SUMS
+
+      # Sigstore-backed provenance: signed via the workflow's OIDC identity, no
+      # certificate required. Verify with: gh attestation verify <file> --repo <owner>/<repo>
+      - name: Attest build provenance
+        uses: actions/attest-build-provenance@v2
+        with:
+          subject-path: "dist/dodo-datagen-*"
+
+      - name: Publish release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/*
+          generate_release_notes: true

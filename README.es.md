@@ -51,6 +51,40 @@ velocidad y memoria plana.
   *fallback* a `en_US`.
 - Interfaz en inglés o español, según `--lang` o el entorno.
 
+## Descargar
+
+Cada [release](https://github.com/dodoindustries/dodo-datagen/releases/latest)
+incluye binarios precompilados:
+
+| Plataforma | Binario |
+|---|---|
+| Linux (x86_64) | [dodo-datagen-linux-x86_64](https://github.com/dodoindustries/dodo-datagen/releases/latest/download/dodo-datagen-linux-x86_64) |
+| macOS (Apple Silicon) | [dodo-datagen-macos-arm64](https://github.com/dodoindustries/dodo-datagen/releases/latest/download/dodo-datagen-macos-arm64) |
+| Windows (x86_64) | [dodo-datagen-windows-x86_64.exe](https://github.com/dodoindustries/dodo-datagen/releases/latest/download/dodo-datagen-windows-x86_64.exe) |
+
+En Linux/macOS, dale permiso de ejecución tras descargarlo:
+
+```bash
+chmod +x dodo-datagen-linux-x86_64
+./dodo-datagen-linux-x86_64 --version
+```
+
+Cada release trae un archivo `SHA256SUMS` y una atestación de procedencia firmada
+con [Sigstore](https://www.sigstore.dev/). Comprueba la descarga:
+
+```bash
+sha256sum -c SHA256SUMS                                              # integridad
+gh attestation verify dodo-datagen-linux-x86_64 \
+  --repo dodoindustries/dodo-datagen                                 # procedencia
+```
+
+La procedencia demuestra que el binario salió del workflow de release de este
+repositorio. Los binarios están firmados para procedencia, pero no con un
+certificado de firma de código del sistema operativo, así que Windows SmartScreen
+o macOS Gatekeeper pueden avisar en el primer arranque (en macOS, clic derecho y
+Abrir, o ejecuta `xattr -d com.apple.quarantine <archivo>`). Si necesitas binarios
+firmados con certificado, compila desde el código fuente.
+
 ## Compilar desde el código fuente
 
 Necesitas un compilador de C++17 y CMake ≥ 3.16. Las cabeceras de terceros

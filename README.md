@@ -35,6 +35,40 @@ The two properties worth calling out: it streams, and it's fast. Rows are genera
 - Nullable and unique modifiers, weighted enums, configurable null rate
 - Deterministic output with `--seed`
 
+## Download
+
+Prebuilt binaries are attached to every
+[release](https://github.com/dodoindustries/dodo-datagen/releases/latest):
+
+| Platform | Binary |
+|---|---|
+| Linux (x86_64) | [dodo-datagen-linux-x86_64](https://github.com/dodoindustries/dodo-datagen/releases/latest/download/dodo-datagen-linux-x86_64) |
+| macOS (Apple Silicon) | [dodo-datagen-macos-arm64](https://github.com/dodoindustries/dodo-datagen/releases/latest/download/dodo-datagen-macos-arm64) |
+| Windows (x86_64) | [dodo-datagen-windows-x86_64.exe](https://github.com/dodoindustries/dodo-datagen/releases/latest/download/dodo-datagen-windows-x86_64.exe) |
+
+On Linux/macOS, mark it executable after downloading:
+
+```bash
+chmod +x dodo-datagen-linux-x86_64
+./dodo-datagen-linux-x86_64 --version
+```
+
+Every release includes a `SHA256SUMS` file and a [Sigstore](https://www.sigstore.dev/)
+build-provenance attestation. Check the download:
+
+```bash
+sha256sum -c SHA256SUMS                                              # integrity
+gh attestation verify dodo-datagen-linux-x86_64 \
+  --repo dodoindustries/dodo-datagen                                 # provenance
+```
+
+The provenance proves a binary came from this repository's release workflow. Note
+that the binaries are signed for provenance but not with an OS code-signing
+certificate, so Windows SmartScreen or macOS Gatekeeper may warn on first launch
+(on macOS, right-click and choose Open, or run
+`xattr -d com.apple.quarantine <file>`). If you need certificate-signed builds,
+compile from source.
+
 ## Build from source
 
 You need a C++17 compiler and CMake 3.16 or newer. Two dependencies (`nlohmann/json` and `doctest`) are pulled in by CMake via `FetchContent` the first time you configure, so the **first configure needs network access**. After that you can build offline.
