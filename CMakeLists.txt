@@ -30,6 +30,10 @@ FetchContent_MakeAvailable(nlohmann_json)
 function(dodo_set_warnings target)
     if(MSVC)
         target_compile_options(${target} PRIVATE /W4 /permissive-)
+        # The standard C functions we use (sscanf, getenv) are flagged by MSVC's
+        # CRT as "unsafe"; silence those deprecation warnings rather than switch
+        # to non-portable _s variants.
+        target_compile_definitions(${target} PRIVATE _CRT_SECURE_NO_WARNINGS)
         if(DODO_WERROR)
             target_compile_options(${target} PRIVATE /WX)
         endif()
