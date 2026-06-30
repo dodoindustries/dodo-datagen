@@ -98,7 +98,18 @@ if(DODO_BUILD_TESTS)
         tests/test_schema.cpp
         tests/test_golden.cpp)
     target_link_libraries(dodo_tests PRIVATE dodo_lib doctest::doctest)
-    dodo_set_warnings(dodo_tests)
+    # Make doctest pull in real standard headers (<ostream> etc.) instead of
+    # forward declarations; newer MSVC standard libraries need the complete types.
+    target_compile_definitions(dodo_tests PRIVATE DOCTEST_CONFIG_USE_STD_HEADERS)
+    if(MSVC)
+        # Our test code is warning-clean, but doctest 2.4.11 itself trips a couple
+        # of warnings on very recent MSVC toolsets (e.g. C5285), so don't promote
+        # warnings to errors for this third-party-heavy target.
+        target_compile_options(dodo_tests PRIVATE /W4 /permissive- /wd5285)
+        target_compile_definitions(dodo_tests PRIVATE _CRT_SECURE_NO_WARNINGS)
+    else()
+        dodo_set_warnings(dodo_tests)
+    endif()
 
     add_test(NAME dodo_tests COMMAND dodo_tests)
 endif()
