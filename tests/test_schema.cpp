@@ -132,6 +132,16 @@ TEST_CASE("inline template keeps its braces") {
     CHECK(schema.fields[0].params.at("template") == "{a}-{b}");
 }
 
+TEST_CASE("inline enum strips quotes and keeps non-numeric colon values literal") {
+    I18n i18n(Language::English);
+    Schema s = build_schema_from_inline({"c:enum(\"on:hold\", active:0.5)"}, i18n);
+    REQUIRE(s.fields[0].enum_values.size() == 2);
+    CHECK(s.fields[0].enum_values[0] == "on:hold"); // quotes stripped, colon kept
+    CHECK(s.fields[0].enum_values[1] == "active");
+    REQUIRE(s.fields[0].enum_weights.size() == 1);
+    CHECK(s.fields[0].enum_weights[0] == doctest::Approx(0.5));
+}
+
 TEST_CASE("new field types validate") {
     I18n i18n(Language::English);
     Schema schema = build_schema_from_inline(

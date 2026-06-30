@@ -1,6 +1,8 @@
 #define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
 #include <doctest/doctest.h>
 
+#include <limits>
+
 #include "dodo/rng.hpp"
 
 using dodo::Rng;
@@ -56,4 +58,20 @@ TEST_CASE("next_bool honours the extremes") {
         CHECK(rng.next_bool(1.0));
         CHECK_FALSE(rng.next_bool(0.0));
     }
+}
+
+TEST_CASE("next_int over the full int64 range is safe") {
+    Rng rng(123);
+    const std::int64_t lo = std::numeric_limits<std::int64_t>::min();
+    const std::int64_t hi = std::numeric_limits<std::int64_t>::max();
+    for (int i = 0; i < 10000; ++i) {
+        std::int64_t v = rng.next_int(lo, hi); // must not overflow or divide by zero
+        CHECK(v >= lo);
+        CHECK(v <= hi);
+    }
+}
+
+TEST_CASE("next_index(0) does not divide by zero") {
+    Rng rng(1);
+    CHECK(rng.next_index(0) == 0);
 }

@@ -224,7 +224,7 @@ bool parse_date(std::string_view text, std::int64_t& out_days) {
 
 void format_datetime(std::string& out, std::string_view fmt, int y, unsigned mo,
                      unsigned da, int h, int mi, int s) {
-    char field[8];
+    char field[16];
     for (std::size_t i = 0; i < fmt.size(); ++i) {
         if (fmt[i] != '%' || i + 1 >= fmt.size()) {
             out.push_back(fmt[i]);
@@ -333,10 +333,17 @@ class FloatGenerator : public Generator {
     FloatGenerator(double lo, double hi, int decimals)
         : lo_(lo), span_(hi - lo), decimals_(decimals) {}
     Value generate(Rng& rng, const std::vector<Value>&) override {
-        char b[64];
-        int n =
-            std::snprintf(b, sizeof(b), "%.*f", decimals_, lo_ + rng.next_double() * span_);
-        buf_.assign(b, static_cast<std::size_t>(n));
+        const double value = lo_ + rng.next_double() * span_;
+        // Size the buffer to the formatted length first; a large magnitude or
+        // decimals count can need far more than a fixed stack buffer would hold.
+        const int n = std::snprintf(nullptr, 0, "%.*f", decimals_, value);
+        if (n < 0) {
+            buf_.clear();
+        } else {
+            buf_.resize(static_cast<std::size_t>(n) + 1);
+            std::snprintf(&buf_[0], buf_.size(), "%.*f", decimals_, value);
+            buf_.resize(static_cast<std::size_t>(n));
+        }
         return Value::number(buf_);
     }
 
@@ -393,9 +400,15 @@ class DerivedHandleGenerator : public Generator {
         : first_(first), last_(last), ref_(ref), max_suffix_(max_suffix) {}
 
   protected:
-    void build_local(std::string& out, Rng& rng, const std::vector<Value>& row) {
+    // Returns false when the referenced source column is null this row, so the
+    // derived field becomes null too (matching template's null handling).
+    bool build_local(std::string& out, Rng& rng, const std::vector<Value>& row) {
         if (ref_ >= 0) {
-            slugify(out, row[static_cast<std::size_t>(ref_)].text, '.');
+            const Value& source = row[static_cast<std::size_t>(ref_)];
+            if (source.type == ValueType::Null) {
+                return false;
+            }
+            slugify(out, source.text, '.');
         } else {
             slugify(out, first_[rng.next_index(first_.size())], '.');
             out.push_back('.');
@@ -405,6 +418,7 @@ class DerivedHandleGenerator : public Generator {
             out.push_back('x');
         if (max_suffix_ > 0)
             append_int(out, rng.next_int(1, max_suffix_));
+        return true;
     }
 
     Span<std::string_view> first_, last_;
@@ -418,7 +432,8 @@ class UsernameGenerator : public DerivedHandleGenerator {
     using DerivedHandleGenerator::DerivedHandleGenerator;
     Value generate(Rng& rng, const std::vector<Value>& row) override {
         buf_.clear();
-        build_local(buf_, rng, row);
+        if (!build_local(buf_, rng, row))
+            return Value::null();
         return Value::string(buf_);
     }
 };
@@ -432,7 +447,8 @@ class EmailGenerator : public DerivedHandleGenerator {
           fixed_domain_(std::move(fixed_domain)) {}
     Value generate(Rng& rng, const std::vector<Value>& row) override {
         buf_.clear();
-        build_local(buf_, rng, row);
+        if (!build_local(buf_, rng, row))
+            return Value::null();
         buf_.push_back('@');
         if (!fixed_domain_.empty())
             buf_.append(fixed_domain_);
@@ -951,8 +967,10 @@ GeneratorPtr build(const Field& f, const GeneratorContext& ctx) {
         double hi = param_double(f, "max", price ? 1000.0 : 1.0, i18n);
         if (lo > hi)
             fail(i18n, "error.range_order", {f.name});
-        return std::make_unique<FloatGenerator>(
-            lo, hi, static_cast<int>(param_int(f, "decimals", 2, i18n)));
+        std::int64_t decimals = param_int(f, "decimals", 2, i18n);
+        if (decimals < 0 || decimals > 17)
+            fail(i18n, "error.decimals_range", {f.name});
+        return std::make_unique<FloatGenerator>(lo, hi, static_cast<int>(decimals));
     }
     if (type == "latitude")
         return std::make_unique<FloatGenerator>(-90.0, 90.0, 6);
@@ -1052,9 +1070,12 @@ GeneratorPtr build(const Field& f, const GeneratorContext& ctx) {
         return std::make_unique<SentenceGenerator>(words, 6, 14);
     if (type == "paragraph")
         return std::make_unique<ParagraphGenerator>(words, 4);
-    if (type == "string")
-        return std::make_unique<StringGenerator>(
-            static_cast<std::size_t>(param_int(f, "len", 12, i18n)));
+    if (type == "string") {
+        std::int64_t len = param_int(f, "len", 12, i18n);
+        if (len < 0 || len > 1000000)
+            fail(i18n, "error.length_range", {f.name});
+        return std::make_unique<StringGenerator>(static_cast<std::size_t>(len));
+    }
     if (type == "enum") {
         if (f.enum_values.empty())
             fail(i18n, "error.enum_empty", {f.name});

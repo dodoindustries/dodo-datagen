@@ -287,3 +287,38 @@ TEST_CASE("invalid int range is rejected when built") {
     f.params["max"] = "18";
     CHECK_THROWS_AS(one(f), DodoError);
 }
+
+TEST_CASE("an absurd decimals count is rejected at build time") {
+    Field f = make_field("p", "float");
+    f.params["decimals"] = "300";
+    CHECK_THROWS_AS(one(f), DodoError);
+}
+
+TEST_CASE("a negative string length is rejected at build time") {
+    Field f = make_field("s", "string");
+    f.params["len"] = "-1";
+    CHECK_THROWS_AS(one(f), DodoError);
+}
+
+TEST_CASE("a derived email is null when its source column is null") {
+    Field name = make_field("name", "full_name");
+    name.nullable = true;
+    Field email = make_field("email", "email");
+    email.params["from"] = "name";
+    Built b = build({name, email}, "en_US", 1.0); // null_rate 1 -> name always null
+    Rng rng(1);
+    b.step(rng);
+    CHECK(b.row[0].type == ValueType::Null);
+    CHECK(b.row[1].type == ValueType::Null);
+}
+
+TEST_CASE("a very wide int range does not crash the generator") {
+    Field f = make_field("x", "int");
+    f.params["min"] = "-9223372036854775808";
+    f.params["max"] = "9223372036854775807";
+    auto g = one(f);
+    Rng rng(1);
+    std::vector<Value> row(1);
+    for (int i = 0; i < 100; ++i)
+        CHECK(g->generate(rng, row).type == ValueType::Number);
+}

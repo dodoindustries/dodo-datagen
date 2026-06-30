@@ -79,6 +79,7 @@ const Catalog& english() {
     static const Catalog c = {
         {"error.unknown_option", "unknown option: {}"},
         {"error.missing_value", "option {} needs a value"},
+        {"error.unexpected_value", "option {} does not take a value"},
         {"error.invalid_rows", "--rows must be a non-negative integer, got: {}"},
         {"error.invalid_format", "unknown format: {} (use csv, tsv, json, jsonl or sql)"},
         {"error.invalid_seed", "--seed must be a non-negative integer, got: {}"},
@@ -111,6 +112,8 @@ const Catalog& english() {
          "enum weights must be non-negative and not all zero in field \"{}\""},
         {"error.param_int", "parameter \"{}\" must be an integer in field \"{}\""},
         {"error.param_number", "parameter \"{}\" must be a number in field \"{}\""},
+        {"error.decimals_range", "decimals must be between 0 and 17 in field \"{}\""},
+        {"error.length_range", "len must be between 0 and 1000000 in field \"{}\""},
         {"error.pattern_missing", "pattern field \"{}\" needs a template"},
         {"error.constant_missing", "constant field \"{}\" needs a value"},
         {"error.template_missing", "template field \"{}\" needs a template string"},
@@ -176,6 +179,7 @@ const Catalog& spanish() {
     static const Catalog c = {
         {"error.unknown_option", "opcion desconocida: {}"},
         {"error.missing_value", "la opcion {} necesita un valor"},
+        {"error.unexpected_value", "la opcion {} no acepta un valor"},
         {"error.invalid_rows", "--rows debe ser un entero no negativo, se recibio: {}"},
         {"error.invalid_format",
          "formato desconocido: {} (usa csv, tsv, json, jsonl o sql)"},
@@ -212,6 +216,8 @@ const Catalog& spanish() {
          "los pesos deben ser no negativos y no todos cero en el campo \"{}\""},
         {"error.param_int", "el parametro \"{}\" debe ser un entero en el campo \"{}\""},
         {"error.param_number", "el parametro \"{}\" debe ser un numero en el campo \"{}\""},
+        {"error.decimals_range", "decimals debe estar entre 0 y 17 en el campo \"{}\""},
+        {"error.length_range", "len debe estar entre 0 y 1000000 en el campo \"{}\""},
         {"error.pattern_missing", "el campo pattern \"{}\" necesita una plantilla"},
         {"error.constant_missing", "el campo constant \"{}\" necesita un valor"},
         {"error.template_missing", "el campo template \"{}\" necesita una plantilla"},

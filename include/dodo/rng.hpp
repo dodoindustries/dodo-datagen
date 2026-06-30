@@ -43,8 +43,14 @@ class Rng {
         if (max <= min) {
             return min;
         }
-        const std::uint64_t span = static_cast<std::uint64_t>(max - min) + 1;
-        return min + static_cast<std::int64_t>(bounded(span));
+        // Width in unsigned arithmetic so a span wider than INT64_MAX (e.g. the
+        // full int64 range) can't overflow the subtraction.
+        const std::uint64_t width =
+            static_cast<std::uint64_t>(max) - static_cast<std::uint64_t>(min);
+        if (width == ~std::uint64_t{0}) {
+            return static_cast<std::int64_t>(next_u64());
+        }
+        return min + static_cast<std::int64_t>(bounded(width + 1));
     }
 
     bool next_bool(double probability_true) noexcept {
@@ -74,6 +80,9 @@ class Rng {
     // Unbiased bounded integer in [0, range) via rejection sampling. Portable
     // across compilers (no 128-bit multiply) and free of modulo bias.
     std::uint64_t bounded(std::uint64_t range) noexcept {
+        if (range == 0) {
+            return 0; // defensive: never divide by zero (e.g. next_index(0))
+        }
         const std::uint64_t threshold = (0u - range) % range;
         std::uint64_t value;
         do {

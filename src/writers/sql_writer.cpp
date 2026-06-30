@@ -81,11 +81,18 @@ class SqlWriter : public Writer {
           dialect_(dialect), create_table_(create_table) {}
 
     void begin(const std::vector<Field>& fields) override {
+        const char q = identifier_quote(dialect_);
         for (const Field& f : fields) {
+            // Escape embedded quote chars by doubling, same as write_identifier;
+            // the column list must match the (escaped) CREATE TABLE identifiers.
             std::string col;
-            col.push_back(identifier_quote(dialect_));
-            col.append(f.name);
-            col.push_back(identifier_quote(dialect_));
+            col.push_back(q);
+            for (char c : f.name) {
+                if (c == q)
+                    col.push_back(q);
+                col.push_back(c);
+            }
+            col.push_back(q);
             columns_.push_back(col);
         }
 

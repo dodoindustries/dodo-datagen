@@ -148,6 +148,16 @@ TEST_CASE("SQL (mysql) uses backticks and escapes backslashes") {
     CHECK(out == "INSERT INTO `t` (`p`) VALUES\n('a\\\\b');\n");
 }
 
+TEST_CASE("SQL escapes a quote in a field name in the INSERT column list") {
+    CliOptions o;
+    o.format = OutputFormat::Sql;
+    o.table = "t";
+    o.batch = 10;
+    auto out = render(o, columns({"a\"b"}), {{Value::number("1")}});
+    // The embedded quote must be doubled, matching CREATE TABLE / write_identifier.
+    CHECK(out.find("(\"a\"\"b\")") != std::string::npos);
+}
+
 TEST_CASE("SQL CREATE TABLE maps column types") {
     CliOptions o;
     o.format = OutputFormat::Sql;

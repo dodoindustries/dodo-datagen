@@ -1,5 +1,6 @@
 #include "dodo/cli.hpp"
 
+#include <cerrno>
 #include <cstdlib>
 #include <string>
 #include <string_view>
@@ -20,8 +21,9 @@ std::int64_t parse_non_negative(const I18n& i18n, std::string_view text,
                                 std::string_view key) {
     std::string copy(text);
     char* end = nullptr;
+    errno = 0;
     long long v = std::strtoll(copy.c_str(), &end, 10);
-    if (end == copy.c_str() || *end != '\0' || v < 0)
+    if (end == copy.c_str() || *end != '\0' || v < 0 || errno == ERANGE)
         fail(i18n, key, {text});
     return v;
 }
@@ -77,23 +79,33 @@ CliOptions parse_cli(int argc, char** argv) {
     o.language = detect_language(argc, argv);
     I18n i18n(o.language);
 
+    // `has_inline` distinguishes "--flag=value" (use the inline value, even if
+    // empty) from "--flag" (take the next argv). Without it, "--output=" would
+    // silently swallow the following argument.
+    bool has_inline = false;
     auto value_of = [&](int& i, std::string_view inlined,
                         std::string_view flag) -> std::string_view {
-        if (!inlined.empty())
+        if (has_inline)
             return inlined;
         if (i + 1 >= argc)
             fail(i18n, "error.missing_value", {flag});
         return argv[++i];
+    };
+    auto reject_value = [&](std::string_view flag) {
+        if (has_inline)
+            fail(i18n, "error.unexpected_value", {flag});
     };
 
     for (int i = 1; i < argc; ++i) {
         std::string_view arg = argv[i];
         std::string_view name = arg;
         std::string_view inlined;
+        has_inline = false;
         if (arg.rfind("--", 0) == 0) {
             if (std::size_t eq = arg.find('='); eq != std::string_view::npos) {
                 name = arg.substr(0, eq);
                 inlined = arg.substr(eq + 1);
+                has_inline = true;
             }
         }
 
@@ -129,8 +141,9 @@ CliOptions parse_cli(int argc, char** argv) {
             std::string_view v = value_of(i, inlined, name);
             std::string copy(v);
             char* end = nullptr;
+            errno = 0;
             unsigned long long s = std::strtoull(copy.c_str(), &end, 10);
-            if (end == copy.c_str() || *end != '\0')
+            if (end == copy.c_str() || *end != '\0' || errno == ERANGE)
                 fail(i18n, "error.invalid_seed", {v});
             o.seed = s;
             o.has_seed = true;
@@ -146,6 +159,7 @@ CliOptions parse_cli(int argc, char** argv) {
             o.delimiter = v.front();
             o.delimiter_set = true;
         } else if (name == "--no-header") {
+            reject_value(name);
             o.header = false;
         } else if (name == "--null-rate") {
             o.null_rate = parse_unit_interval(i18n, value_of(i, inlined, name));
@@ -159,10 +173,13 @@ CliOptions parse_cli(int argc, char** argv) {
         } else if (name == "--dialect") {
             o.dialect = parse_dialect(i18n, value_of(i, inlined, name));
         } else if (name == "--create-table") {
+            reject_value(name);
             o.create_table = true;
         } else if (name == "--pretty") {
+            reject_value(name);
             o.pretty = true;
         } else if (name == "--quiet") {
+            reject_value(name);
             o.quiet = true;
         } else {
             fail(i18n, "error.unknown_option", {arg});

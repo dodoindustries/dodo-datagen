@@ -88,6 +88,16 @@ void assign_positional(Field& field, int index, std::string_view value, const I1
     }
 }
 
+bool parse_strict_double(std::string_view text, double& out) {
+    if (text.empty()) {
+        return false;
+    }
+    std::string copy(text);
+    char* end = nullptr;
+    out = std::strtod(copy.c_str(), &end);
+    return end != copy.c_str() && *end == '\0';
+}
+
 void parse_inline_args(Field& field, std::string_view args, const I18n& i18n) {
     std::string_view type = canonical_type(field.type);
     int positional = 0;
@@ -97,13 +107,16 @@ void parse_inline_args(Field& field, std::string_view args, const I18n& i18n) {
             continue;
         }
         if (type == "enum") {
-            std::size_t colon = token.find(':');
-            if (colon != std::string_view::npos) {
-                field.enum_values.emplace_back(trim(token.substr(0, colon)));
-                std::string weight(trim(token.substr(colon + 1)));
-                field.enum_weights.push_back(std::strtod(weight.c_str(), nullptr));
+            // A trailing ":number" is a weight; anything else (including a colon
+            // followed by a non-number, e.g. a time literal) is part of the value.
+            std::size_t colon = token.rfind(':');
+            double weight = 0.0;
+            if (colon != std::string_view::npos &&
+                parse_strict_double(trim(token.substr(colon + 1)), weight)) {
+                field.enum_values.emplace_back(strip_quotes(trim(token.substr(0, colon))));
+                field.enum_weights.push_back(weight);
             } else {
-                field.enum_values.emplace_back(token);
+                field.enum_values.emplace_back(strip_quotes(token));
             }
             continue;
         }
